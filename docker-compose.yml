@@ -1,0 +1,29 @@
+# docker-compose.yml
+
+version: '3'
+
+services:
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: 'equal'
+      MYSQL_USER: 'admin'
+      MYSQL_PASSWORD: '0000'  # 원하는 비밀번호로 변경
+      MYSQL_ROOT_PASSWORD: '1111'  # 원하는 root 비밀번호로 변경
+    ports:
+      - '3306:3306'  # 호스트와 컨테이너 포트 매핑
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
