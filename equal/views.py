@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework import generics
 from .models import Player, Problem, Rank
 from django.contrib.auth.models import User
@@ -8,7 +8,13 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate, login
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_jwt.settings import api_settings
+from rest_framework_simplejwt.tokens import RefreshToken
+
+jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
+jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
+
 
 class PlayerListCreate(generics.ListCreateAPIView):
     players = Player.objects.all()
@@ -22,10 +28,11 @@ class PlayerDetailUpdate(generics.RetrieveUpdateAPIView):
     serializer_class = PlayerSerializer
     lookup_field = 'user_id'
 
-class PlayerReturn(generics.RetrieveAPIView):
-    queryset = Player.objects.all()
-    serializer_class = PlayerSerializer
-    lookup_field = 'user_id'
+class PlayerDetail(APIView):
+    def get(self, request, user_id):
+        player = get_object_or_404(Player, user_id=user_id)
+        serializer = PlayerSerializer(player)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ProblemListCreate(generics.ListCreateAPIView):
@@ -88,7 +95,10 @@ class UserLoginAPIView(APIView):
             if user is not None:
                 login(request, user)
                 print("Login completed")
-                return Response({'user_id': userid}, status=status.HTTP_200_OK)
+                payload = jwt_payload_handler(user)
+                token = jwt_encode_handler(payload)
+                # return Response({'user_id': userid}, status=status.HTTP_200_OK)
+                return Response({'token': token}, status=status.HTTP_200_OK)
             else:
                 return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
         else:
@@ -123,6 +133,21 @@ class UserSignUpAPIView(APIView):
             return Response({'user_id': user.username}, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class LogoutView(APIView):
+    permission_classes = [AllowAny]
+    print("GOT IN THE LOGOUTVIEW")
+    def post(self, request):
+        try:
+            print("requestdatais:", request.data)
+            refresh_token = request.data["refresh_token"]
+            token = RefreshToken(refresh_token)
+            print("token: ", token)
+            token.blacklist()
+            print("token after:")
+            return Response(status=status.HTTP_205_RESET_CONTENT)
+        except Exception as e:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 # @api_view(['POST'])
 # def login(request):
 #     if request.method == 'POST':
