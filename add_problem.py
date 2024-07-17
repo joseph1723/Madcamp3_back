@@ -8,11 +8,9 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'equal_project.settings')
 django.setup()
 
 from equal.models import Problem
-
-def add_data(num, difficulty):
+def add_data(id_n, num, difficulty):
     # 예시 데이터 추가
-    problem = Problem(num = num, difficulty = 1)
-
+    problem = Problem(id = id_n, num = num, difficulty = 1)
     
     # 데이터베이스에 저장
     problem.save()
@@ -20,9 +18,11 @@ def add_data(num, difficulty):
     print("Data added successfully")
 
 if __name__ == "__main__":
+    id_n = 1
     file_path = 'problems.txt'
     with open(file_path, 'r') as file:
         content = file.read()
     lines = content.replace('\'', '').replace(',','').split(' ')
     for l in lines:
-        add_data(l, 1)
+        add_data(id_n, l, 1)
+        id_n += 1

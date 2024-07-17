@@ -25,35 +25,23 @@ class Player(models.Model):
     item = models.JSONField(default=list)
     gold = models.IntegerField(default = 0)
     email = models.EmailField(null=True, blank=True)
-    # is_staff = models.BooleanField(default=False)
-    # is_active = models.BooleanField(default=True)
-    # date_joined = models.DateTimeField(default=timezone.now)
-
-    # objects = CustomUserManager()
-
-    # USERNAME_FIELD = 'user_id'
-    # EMAIL_FIELD = 'email'
-    # REQUIRED_FIELDS = ['nickname', 'highscore', 'item', 'gold']  # 필수 입력 필드 목록
-
-    # def __str__(self):
-    #     return self.user_id
-
-    # def get_full_name(self):
-    #     return self.nickname
-
-    # def get_short_name(self):
-    #     return self.nickname
     
     def __str__(self):
         return f"{self.user_id} {self.nickname} {self.email}"
+    
+    def update_score_if_higher(self, new_score):
+        if new_score > self.highscore:
+            self.highscore = new_score
+            self.save()
 
 class Problem(models.Model):
+    id = models.IntegerField(primary_key=True)
     num = models.CharField(max_length = 4)
     difficulty = models.IntegerField()
     
 
     def __str__(self):
-        return f"{self.num} {self.difficulty}"
+        return f"{self.id} {self.num} {self.difficulty}"
 
 class Rank(models.Model):
     user_id = models.CharField(max_length=100, unique=True)

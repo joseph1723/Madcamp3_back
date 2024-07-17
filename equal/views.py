@@ -24,9 +24,22 @@ class PlayerListCreate(generics.ListCreateAPIView):
         return Player.objects.all()
 
 class PlayerDetailUpdate(generics.RetrieveUpdateAPIView):
-    queryset = Player.objects.all()
-    serializer_class = PlayerSerializer
-    lookup_field = 'user_id'
+    def put(self, request, user_id):
+        player = get_object_or_404(Player, user_id=user_id)
+        
+        print("PLAYER:___::", player.item)
+        serializer = PlayerSerializer(player, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            print("PLAYER:::", player.item)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            # Log the errors for debugging
+            print(serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # queryset = Player.objects.all()
+    # serializer_class = PlayerSerializer
+    # lookup_field = 'user_id'
 
 class PlayerDetail(APIView):
     def get(self, request, user_id):
@@ -39,14 +52,34 @@ class ProblemListCreate(generics.ListCreateAPIView):
     problems = Problem.objects.all()
     serializer_class = ProblemSerializer
 
-    permission_classes = [IsAuthenticated]  # 인증이 필요한 뷰 설정
+    # permission_classes = [IsAuthenticated]  # 인증이 필요한 뷰 설정
     def get_queryset(self):
-        return Problem.objects.all()
+        # URL 파라미터에서 'ids'를 가져옵니다.
+        ids_param = self.request.query_params.get('ids')
+        if ids_param:
+            try:
+                # 'ids' 파라미터를 쉼표로 구분하여 숫자 리스트로 변환합니다.
+                ids = [int(id_str) for id_str in ids_param.split(',')]
+                print(ids)
+                return Problem.objects.filter(id__in=ids)
+            except ValueError:
+                # 잘못된 파라미터가 전달된 경우 빈 쿼리셋을 반환합니다.
+                return Problem.objects.none()
+        else:
+            # 'ids' 파라미터가 없으면 빈 쿼리셋을 반환합니다.
+            return Problem.objects.all()
+
 
 class RankListCreateAPIView(generics.ListCreateAPIView):
     queryset = Rank.objects.order_by('-score')  # score 내림차순 정렬
     serializer_class = RankSerializer
-    permission_classes = [IsAuthenticated]  # 인증이 필요한 뷰 설정
+    # permission_classes = [IsAuthenticated]  # 인증이 필요한 뷰 설정
+
+
+    def get(self, request, *args, **kwargs):
+        ranks = self.get_queryset()
+        serializer = self.get_serializer(ranks, many=True)
+        return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
         user_id = request.data.get('user_id')
@@ -62,22 +95,6 @@ class RankListCreateAPIView(generics.ListCreateAPIView):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-    # queryset = Rank.objects.order_by('-score')  # score 내림차순 정렬
-    # serializer_class = RankSerializer 
-    # def post(self, request, *args, **kwargs):
-    #     user_id = request.data.get('user_id')
-    #     new_score = int(request.data.get('score'))
-
-    #     existing_rank = Rank.objects.filter(user_id=user_id).first()
-
-    #     if existing_rank:
-    #         existing_rank.update_score_if_higher(new_score)
-    #         return Response(self.get_serializer(existing_rank).data, status=status.HTTP_200_OK)
-    #     else:
-    #         serializer = self.get_serializer(data=request.data)
-    #         serializer.is_valid(raise_exception=True)
-    #         serializer.save()
-    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class UserLoginAPIView(APIView):
     print("LOGIN CALLED")
@@ -116,11 +133,10 @@ class UserSignUpAPIView(APIView):
             user = User.objects.create_user(
                 username=serializer.validated_data['username'],
                 password=serializer.validated_data['password'],
-                email=serializer.validated_data['email'],
                 first_name=serializer.validated_data.get('first_name', ''),
                 last_name=serializer.validated_data.get('last_name', ''),
             )
-            player_data = {'user_id': request.data['username'], 'nickname' : request.data['nickname'], 'email' : request.data['email']}  # user_id는 User 모델의 기본 키
+            player_data = {'user_id': request.data['username'], 'nickname' : request.data['nickname'], 'gold' : 100}  # user_id는 User 모델의 기본 키
             player_serializer = PlayerSerializer(data=player_data)
             if player_serializer.is_valid():
                 print("check")

@@ -19,7 +19,9 @@ class LoginRequiredMiddleware:
             reverse('api-signup'),  # Assuming 'api-login' is a valid URL name
             reverse('token_obtain_pair'),  # Add the token endpoint to the exempt paths
             reverse('token_refresh'),  # If you have a token refresh endpoint
-            reverse('api-logout')
+            reverse('api-logout'),
+            reverse('rank-list-create'),
+            # reverse('problem-list-create'),
         ]
         if request.path_info.startswith('/api/') and request.path_info not in login_exempt_paths:
             print("request path is :",request.path_info)
